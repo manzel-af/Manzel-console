@@ -1,0 +1,298 @@
+@import "tailwindcss";
+
+/*
+ * The Manzel console: the same tokens as the app (src/styles/global.css and
+ * src/lib/theme/tokens.ts there) and the website (app/globals.css there), so
+ * the three are visibly one product.
+ *
+ * Components use the semantic names — bg-surface, text-fg-muted, border-line —
+ * and never a `dark:` variant for colour. The two blocks below are the only
+ * place light and dark differ.
+ */
+
+/* Dark mode follows a class on <html>, set before first paint by the inline
+   script in the root layout, so there is no flash of the wrong theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* rtl: and ltr: follow the NEAREST direction (:dir), not any ancestor's
+   [dir] attribute as Tailwind's own do — so an English preview inside the
+   Dari console points its arrows the English way, and a Dari one inside the
+   English console the Dari way. */
+@custom-variant rtl (&:where(:dir(rtl)));
+@custom-variant ltr (&:where(:dir(ltr)));
+
+:root {
+  color-scheme: light;
+
+  /* Warm paper. */
+  --bg: #FBF8F3;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-sunken: #F5F1E9;
+
+  --line: #E7DFD2;
+  --line-strong: #C9BDA9;
+
+  --fg: #1A1714;
+  --fg-muted: #6D6355;
+  /* The app's #94897A is 3.4:1 on paper; the web needs 4.5:1 for small text. */
+  --fg-subtle: #766B5C;
+  --fg-on-primary: #FFFFFF;
+
+  --primary: #1E4E8C;        /* lapis-600 */
+  --primary-hover: #1A4176;  /* lapis-700 */
+  --primary-soft: #D8E6F7;   /* lapis-100 */
+
+  /* Saffron as text needs the deeper step to pass AA on paper. */
+  --accent: #94601A;
+  --accent-soft: #FBEBC8;
+  --accent-bright: #F0BE51;  /* the lit window: decoration, never text */
+
+  --success: #28704F;
+  --success-soft: #D2EDDD;
+  --danger: #A83D32;
+  --danger-soft: #FAD8D4;
+  --warning: #8A5A18;
+  --warning-soft: #FBEBC8;
+
+  --shadow-card: 0 1px 2px rgb(26 23 20 / 0.05), 0 1px 1px rgb(26 23 20 / 0.03);
+  --shadow-pop: 0 18px 40px -12px rgb(12 27 49 / 0.28), 0 2px 6px rgb(12 27 49 / 0.08);
+  --scrim: rgb(12 27 49 / 0.42);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg: #0E1116;
+  --surface: #171B21;
+  --surface-raised: #1E232B;
+  --surface-sunken: #070A0E;
+
+  --line: #272D36;
+  --line-strong: #404853;
+
+  --fg: #F3F1EC;
+  --fg-muted: #A6AEBA;
+  --fg-subtle: #838C99;
+  /* Dark-mode primary is light, so text sitting on it must be dark. */
+  --fg-on-primary: #08172B;
+
+  --primary: #86ACE1;
+  --primary-hover: #B3CCEE;
+  --primary-soft: #173660;
+
+  --accent: #F0BE51;
+  --accent-soft: #5E3E1A;
+  --accent-bright: #F0BE51;
+
+  --success: #8FD0AD;
+  --success-soft: #1D4E3A;
+  --danger: #F2B3AA;
+  --danger-soft: #832E26;
+  --warning: #F0BE51;
+  --warning-soft: #5E3E1A;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 24px 48px -12px rgb(0 0 0 / 0.6), 0 2px 8px rgb(0 0 0 / 0.4);
+  --scrim: rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-on-primary: var(--fg-on-primary);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-bright: var(--accent-bright);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+
+  /* ManzelAfghani is limited to U+060B: first in every stack, used only for ؋. */
+  --font-arabic: var(--font-afghani), var(--font-vazirmatn), "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-latin: var(--font-afghani), var(--font-sansation), var(--font-vazirmatn), "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+}
+
+@theme {
+  --color-lapis-50: #EEF4FC;
+  --color-lapis-100: #D8E6F7;
+  --color-lapis-200: #B3CCEE;
+  --color-lapis-300: #86ACE1;
+  --color-lapis-400: #5788D1;
+  --color-lapis-500: #3467BD;
+  --color-lapis-600: #1E4E8C;
+  --color-lapis-700: #1A4176;
+  --color-lapis-800: #173660;
+  --color-lapis-900: #132A4B;
+  --color-lapis-950: #0C1B31;
+  --color-saffron-100: #FBEBC8;
+  --color-saffron-200: #F7D78D;
+  --color-saffron-300: #F0BE51;
+  --color-saffron-400: #E8A82F;
+  --color-saffron-500: #D9962B;
+  --color-saffron-600: #B8791F;
+  --color-pistachio-300: #7CBE9B;
+  --color-pistachio-500: #2E7D5B;
+  --color-pomegranate-500: #C0483C;
+  --color-ink-900: #0E1116;
+
+  --radius-card: 1rem;
+  --radius-field: 0.75rem;
+  --radius-pill: 999px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-fade-in: fade-in 0.18s var(--ease-out-soft) both;
+  --animate-rise: rise 0.28s var(--ease-out-soft) both;
+  --animate-pop: pop 0.18s var(--ease-out-soft) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Dari and Pashto in Vazirmatn, English in Sansation: the page's language
+     decides, not a class on every element. */
+  html:lang(fa-AF), html:lang(ps-AF) {
+    font-family: var(--font-arabic);
+    line-height: 1.75;
+  }
+  html:lang(en) {
+    font-family: var(--font-latin);
+    line-height: 1.55;
+  }
+
+  /* Words written in another language than the page's — a banner's Dari in
+     the English console, its English in the Dari one — in their own face. */
+  [lang='fa-AF']:not(html), [lang='ps-AF']:not(html) {
+    font-family: var(--font-arabic);
+  }
+  [lang='en']:not(html) {
+    font-family: var(--font-latin);
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent-bright) 55%, transparent);
+    color: var(--fg);
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* A number or an address inside an RTL sentence keeps its own direction. */
+  bdi, .ltr-island {
+    unicode-bidi: isolate;
+  }
+
+  button, [role="button"], summary, label[for] {
+    cursor: pointer;
+  }
+  button:disabled, [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* Native dialogs: the console's sheets and confirmations. */
+  dialog::backdrop {
+    background: var(--scrim);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Quiet scrollbars that still show where you are. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Brand textures
+ * ------------------------------------------------------------------------ */
+
+/* The girih star, tiled, as a MASK over a solid fill — so it takes the
+   theme's colour, which a data-URI image cannot. */
+@utility girih {
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--girih-color, var(--primary));
+    opacity: var(--girih-opacity, 0.07);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.2'%3E%3Cpath d='M32 6l7 16 16 7-16 7-7 16-7-16-16-7 16-7z'/%3E%3Cpath d='M32 14l11 7v14l-11 7-11-7V21z'/%3E%3Cpath d='M0 0l6 6M64 0l-6 6M0 64l6-6M64 64l-6-6'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 64px 64px repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.2'%3E%3Cpath d='M32 6l7 16 16 7-16 7-7 16-7-16-16-7 16-7z'/%3E%3Cpath d='M32 14l11 7v14l-11 7-11-7V21z'/%3E%3Cpath d='M0 0l6 6M64 0l-6 6M0 64l6-6M64 64l-6-6'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 64px 64px repeat;
+  }
+}
+
+/* A soft, warm light behind the sign-in card — the lit window. */
+@utility window-glow {
+  background:
+    radial-gradient(60% 55% at 50% 30%, color-mix(in oklab, var(--accent-bright) 26%, transparent), transparent 70%),
+    radial-gradient(70% 60% at 50% 70%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 72%);
+}
+
+/* Skeleton shimmer-free pulse: opacity only, as in the app. */
+@utility skeleton {
+  background: var(--surface-sunken);
+  border-radius: 0.5rem;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
