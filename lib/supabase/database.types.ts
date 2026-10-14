@@ -2521,6 +2521,11 @@ export interface Database {
         Args: { p_building_id: string };
         Returns: undefined;
       };
+      /** V038: the room is off the caller's screen, so the next message pushes. */
+      building_chat_unwatch: {
+        Args: { p_building_id: string };
+        Returns: undefined;
+      };
       building_chat_mute: {
         Args: { p_building_id: string; p_muted: boolean };
         Returns: undefined;
@@ -2627,6 +2632,11 @@ export interface Database {
         Returns: { thread_id: string; profile_id: string; status: SupportStatus };
       };
       support_mark_read: {
+        Args: { p_thread_id: string };
+        Returns: undefined;
+      };
+      /** V038: the thread is off the caller's screen (their side only), so the next reply pushes. */
+      support_unwatch: {
         Args: { p_thread_id: string };
         Returns: undefined;
       };

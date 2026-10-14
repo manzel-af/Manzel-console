@@ -107,10 +107,11 @@ export async function markThreadRead(threadId: string) {
 
 /**
  * The thread is off this screen (V038): the person's next message alerts the
- * operators again at once. Never fails loudly — before V038 it is just an error.
+ * operators again at once. Never fails loudly: offline, the window (30
+ * seconds) still runs out.
  */
 export function stopWatchingThread(threadId: string) {
-  void db().rpc('support_unwatch' as never, { p_thread_id: threadId } as never).then(() => undefined, () => undefined);
+  void db().rpc('support_unwatch', { p_thread_id: threadId }).then(() => undefined, () => undefined);
 }
 
 export interface OutgoingAttachment {
