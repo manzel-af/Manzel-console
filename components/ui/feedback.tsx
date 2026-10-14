@@ -71,12 +71,14 @@ export function Callout({
   return (
     <div role={tone === 'danger' ? 'alert' : 'status'}
       className={cn('flex flex-wrap items-start gap-3 rounded-card border p-4', look.box, className)}>
-      <Icon name={icon ?? look.icon} size={20} className={cn('mt-0.5', CALLOUT_ICON[tone])} />
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">{title}</p>
-        {body ? <div className="mt-0.5 text-sm text-fg-muted">{body}</div> : null}
+      <Icon name={icon ?? look.icon} size={20} className={cn('mt-0.5 shrink-0', CALLOUT_ICON[tone])} />
+      {/* The words keep at least 14rem: on a phone the action goes under them
+          instead of squeezing them to a word a line. */}
+      <div className="min-w-0 flex-1 basis-56">
+        <p className="wrap-break-word font-semibold">{title}</p>
+        {body ? <div className="mt-0.5 wrap-break-word text-sm text-fg-muted">{body}</div> : null}
       </div>
-      {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
+      {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
     </div>
   );
 }
@@ -159,8 +161,9 @@ export function StatTile({
         {value === null ? <Skeleton className="h-7 w-16" /> : (
           <span className="truncate text-2xl font-bold text-fg tabular-nums">{value}</span>
         )}
-        <span className="truncate text-sm text-fg-muted">{label}</span>
-        {note ? <span className="truncate text-xs text-fg-subtle">{note}</span> : null}
+        {/* Two lines before an ellipsis: on a phone a cut-off label ("waiting…") says nothing. */}
+        <span className="line-clamp-2 text-sm text-fg-muted">{label}</span>
+        {note ? <span className="line-clamp-2 text-xs text-fg-subtle">{note}</span> : null}
       </span>
     </>
   );

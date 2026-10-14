@@ -229,6 +229,15 @@
     unicode-bidi: isolate;
   }
 
+  /* A grid's cells may be narrower than what is in them (2026-10-14). By
+     default a grid item is never narrower than its longest word or number, so
+     one big amount or one unbroken Dari line made a whole page wider than the
+     phone ("grid blowout": the overview at 450px on a 390px screen, support
+     at 662). Here, in the base layer, any page can still say otherwise. */
+  .grid > * {
+    min-width: 0;
+  }
+
   button, [role="button"], summary, label[for] {
     cursor: pointer;
   }

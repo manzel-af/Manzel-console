@@ -27,7 +27,7 @@ import { Icon } from '@/components/ui/icon';
 import { Card } from '@/components/ui/surfaces';
 import { useToast } from '@/components/ui/toast';
 import {
-  SUPPORT_BUCKET, claimThread, closeThread, markThreadRead, sendMessage, supportKeys, transferThread,
+  SUPPORT_BUCKET, claimThread, closeThread, markThreadRead, sendMessage, stopWatchingThread, supportKeys, transferThread,
   uploadSupportFile, useOperators, useSupportThread, type OutgoingAttachment,
 } from '@/lib/api/support';
 import { useAuth } from '@/lib/auth/auth';
@@ -67,13 +67,27 @@ export function ConversationScreen({ params }: { params: Promise<{ id: string }>
   const bottom = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  // Being here is reading it, and the server's "watching" heartbeat.
+  // Being here is reading it, and the server's "watching" heartbeat — only
+  // while the tab is in front. Leaving is said at once (V038): a hidden tab,
+  // another page, a closed window. Until then the person's next message
+  // raised no alert for as long as the window lasted.
   useEffect(() => {
-    const beat = () => void markThreadRead(threadId)
-      .then(() => queryClient.invalidateQueries({ queryKey: ['admin', 'support'] }));
+    const beat = () => {
+      if (document.visibilityState !== 'visible') return;
+      void markThreadRead(threadId).then(() => queryClient.invalidateQueries({ queryKey: ['admin', 'support'] }));
+    };
     beat();
     const timer = window.setInterval(beat, 20_000);
-    return () => window.clearInterval(timer);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') beat();
+      else stopWatchingThread(threadId);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      stopWatchingThread(threadId);
+    };
   }, [threadId, queryClient]);
 
   // This conversation's own channel, so a reply lands without a refresh.

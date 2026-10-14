@@ -105,6 +105,14 @@ export async function markThreadRead(threadId: string) {
   await db().rpc('support_mark_read', { p_thread_id: threadId });
 }
 
+/**
+ * The thread is off this screen (V038): the person's next message alerts the
+ * operators again at once. Never fails loudly — before V038 it is just an error.
+ */
+export function stopWatchingThread(threadId: string) {
+  void db().rpc('support_unwatch' as never, { p_thread_id: threadId } as never).then(() => undefined, () => undefined);
+}
+
 export interface OutgoingAttachment {
   path: string;
   type: string;

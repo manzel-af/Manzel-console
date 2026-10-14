@@ -12,7 +12,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { ManageError, fail } from '@/lib/errors';
 import type { AppLanguage } from '@/lib/i18n/languages';
@@ -82,9 +82,24 @@ function pushSupported(): boolean {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
+/**
+ * This browser's subscription, if it has one. getRegistration, not `ready`:
+ * `ready` never settles in a browser where the worker is not registered, and
+ * the state would say "checking" for ever.
+ */
 async function currentSubscription(): Promise<PushSubscription | null> {
-  const registration = await navigator.serviceWorker.ready;
-  return registration.pushManager.getSubscription();
+  const registration = await navigator.serviceWorker.getRegistration();
+  return (await registration?.pushManager.getSubscription()) ?? null;
+}
+
+/** The worker to subscribe through: the active one, or the one the console is registering now. */
+async function workerRegistration(): Promise<ServiceWorkerRegistration> {
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing?.active) return existing;
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new ManageError('console.alerts.unsupported')), 10_000)),
+  ]);
 }
 
 async function readState(): Promise<PushState> {
@@ -95,33 +110,46 @@ async function readState(): Promise<PushState> {
   return subscription ? { status: 'on', endpoint: subscription.endpoint } : { status: 'off' };
 }
 
+// One state for every screen that shows it (the Alerts page, Home's card),
+// read again whenever something turns alerts on or off.
+const CHECKING: PushState = { status: 'checking' };
+let pushState: PushState = CHECKING;
+let reading: Promise<void> | null = null;
+const pushListeners = new Set<() => void>();
+
+/** Reads this browser's state again, and tells every screen showing it. */
+export function refreshPushState(): Promise<void> {
+  reading = readState()
+    .then((next) => { pushState = next; }, () => { pushState = { status: 'unsupported' }; })
+    .then(() => { for (const listener of pushListeners) listener(); });
+  return reading;
+}
+
+function listenToPushState(listener: () => void) {
+  pushListeners.add(listener);
+  if (!reading) void refreshPushState();
+  return () => {
+    pushListeners.delete(listener);
+  };
+}
+
 /** Whether this browser gets alerts; `refresh` after turning them on or off. */
 export function usePushState(): { state: PushState; refresh(): void } {
-  const [state, setState] = useState<PushState>({ status: 'checking' });
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    let live = true;
-    readState().then((next) => {
-      if (live) setState(next);
-    }, () => {
-      if (live) setState({ status: 'unsupported' });
-    });
-    return () => {
-      live = false;
-    };
-  }, [tick]);
-  return { state, refresh: () => setTick((value) => value + 1) };
+  const state = useSyncExternalStore(listenToPushState, () => pushState, () => CHECKING);
+  return { state, refresh: () => void refreshPushState() };
 }
 
 /**
  * Asks the browser for permission (the browser's own prompt), subscribes it
- * with the platform's VAPID key and tells the database where to push.
+ * with the platform's VAPID key and tells the database where to push. With
+ * permission already given there is no prompt: it only makes sure the
+ * database knows this browser, in this language.
  */
 export async function subscribeThisBrowser(language: AppLanguage): Promise<void> {
   if (!pushSupported() || !VAPID_PUBLIC_KEY) throw new ManageError('console.alerts.unsupported');
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new ManageError('console.alerts.blocked');
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await workerRegistration();
   const subscription = await registration.pushManager.getSubscription()
     ?? await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) });
   const json = subscription.toJSON();
@@ -142,6 +170,75 @@ export async function unsubscribeThisBrowser(): Promise<void> {
   const { error } = await getSupabase().rpc('operator_push_unsubscribe', { p_endpoint: subscription.endpoint });
   if (error) fail(error);
   await subscription.unsubscribe();
+  // Turned off by hand: the console does not turn it back on by itself.
+  setFlag(OFF_BY_HAND, true);
+}
+
+/** The browser's prompt was shown once by the console itself. */
+const ASKED = 'manzel-console-alerts-asked';
+/** Turned off on the Alerts page: no switching back on behind the operator's back. */
+const OFF_BY_HAND = 'manzel-console-alerts-off';
+
+function flag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setFlag(key: string, on: boolean) {
+  try {
+    if (on) window.localStorage.setItem(key, '1');
+    else window.localStorage.removeItem(key);
+  } catch {
+    // Private mode: forgotten with the window, which is harmless.
+  }
+}
+
+/** Turned on by a click (Home's card, the Alerts page): the operator's choice. */
+export async function turnOnAlertsHere(language: AppLanguage): Promise<void> {
+  setFlag(OFF_BY_HAND, false);
+  await subscribeThisBrowser(language);
+}
+
+/**
+ * Alerts turn themselves on, as other sites' do (2026-10-14):
+ *
+ *   allowed already    subscribed without asking — unless turned off by hand
+ *                      on the Alerts page; a browser already subscribed tells
+ *                      the database again, in the console's language, in
+ *                      case the database had forgotten it;
+ *   never asked        the browser's own prompt, once (Chrome and Edge show
+ *                      it; Firefox and Safari only after a click, which
+ *                      Home's card offers);
+ *   blocked            nothing: Home's card says how to allow it.
+ */
+export function useAutoAlerts(language: AppLanguage) {
+  useEffect(() => {
+    if (!pushSupported() || !VAPID_PUBLIC_KEY) return;
+    let cancelled = false;
+    void (async () => {
+      const permission = Notification.permission;
+      if (permission === 'denied') return;
+      if (permission === 'granted') {
+        const existing = await currentSubscription().catch(() => null);
+        if (!existing && flag(OFF_BY_HAND)) return;
+      } else {
+        if (flag(ASKED)) return;
+        setFlag(ASKED, true);
+      }
+      try {
+        await subscribeThisBrowser(language);
+      } catch {
+        // Not allowed, or no worker yet: Home's card says so and offers the click.
+      }
+      if (!cancelled) void refreshPushState();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [language]);
 }
 
 /**

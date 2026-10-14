@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 
 import { Icon, type IconName } from '@/components/ui/icon';
 import { useToast } from '@/components/ui/toast';
+import { useAutoAlerts } from '@/lib/api/alerts';
 import { useI18n } from '@/lib/i18n/client';
 import { getSupabase } from '@/lib/supabase/client';
 import type { OperatorAlertKind, OperatorAlertRow } from '@/lib/supabase/database.types';
@@ -29,9 +30,11 @@ export const ALERT_ICON: Record<OperatorAlertKind, IconName> = {
 
 export function AlertFeed() {
   // Stable values only: the channel is opened once, not at every render.
-  const { t, locale } = useI18n();
+  const { t, locale, language } = useI18n();
   const toast = useToast();
   const queryClient = useQueryClient();
+  // The browser's own alerts turn on by themselves, once an operator is in.
+  useAutoAlerts(language);
 
   useEffect(() => {
     const supabase = getSupabase();

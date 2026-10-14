@@ -152,13 +152,16 @@ export function PageHeader({
           {backLabel}
         </Link>
       ) : null}
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0 flex-1">
+      {/* On a phone the title has the whole width and the buttons go under it;
+          wider, the title keeps at least 16rem before the buttons wrap below.
+          (The title once shrank to a word a line so the buttons could stay beside it.) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-x-6">
+        <div className="min-w-0 sm:flex-1 sm:basis-64">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold text-fg sm:text-[1.7rem]">{title}</h1>
+            <h1 className="min-w-0 wrap-break-word text-2xl font-bold text-fg sm:text-[1.7rem]">{title}</h1>
             {badge}
           </div>
-          {subtitle ? <p className="mt-1 max-w-3xl text-fg-muted">{subtitle}</p> : null}
+          {subtitle ? <p className="mt-1 max-w-3xl wrap-break-word text-fg-muted">{subtitle}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>

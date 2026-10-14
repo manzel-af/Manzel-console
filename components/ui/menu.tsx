@@ -19,6 +19,8 @@ export interface MenuItem {
   href?: string;
   tone?: 'default' | 'danger';
   disabled?: boolean;
+  /** The current choice (a language, say): shown as chosen, and where focus starts. */
+  checked?: boolean;
 }
 
 export function Menu({
@@ -45,7 +47,7 @@ export function Menu({
       if (event.key === 'Escape') setOpen(false);
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
-        const buttons = [...(list.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])') ?? [])];
+        const buttons = [...(list.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not([aria-disabled="true"])') ?? [])];
         const index = buttons.indexOf(document.activeElement as HTMLElement);
         const next = event.key === 'ArrowDown' ? index + 1 : index - 1;
         buttons[(next + buttons.length) % buttons.length]?.focus();
@@ -53,8 +55,11 @@ export function Menu({
     };
     document.addEventListener('pointerdown', onPointer);
     document.addEventListener('keydown', onKey);
-    // The first item takes focus, so the keyboard can go straight on.
-    list.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    // The current choice takes focus, else the first item, so the keyboard
+    // can go straight on. Only a keyboard shows it (focus-visible): a click
+    // that opened the menu leaves the chosen item as the one marked.
+    (list.current?.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]')
+      ?? list.current?.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus();
     return () => {
       document.removeEventListener('pointerdown', onPointer);
       document.removeEventListener('keydown', onKey);
@@ -75,9 +80,15 @@ export function Menu({
             if (item === 'divider') return <div key={`d${index}`} className="my-1 border-t border-line" />;
             const classes = cn(
               'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-start text-sm font-medium outline-none',
-              item.tone === 'danger' ? 'text-danger hover:bg-danger-soft focus:bg-danger-soft' : 'text-fg hover:bg-surface-sunken focus:bg-surface-sunken',
+              item.tone === 'danger'
+                ? 'text-danger hover:bg-danger-soft focus-visible:bg-danger-soft'
+                : 'text-fg hover:bg-surface-sunken focus-visible:bg-surface-sunken',
+              item.checked && 'bg-primary-soft text-primary hover:bg-primary-soft',
               item.disabled && 'pointer-events-none opacity-50',
             );
+            // A choice among several (languages) is a radio item, and says which is chosen.
+            const role = item.checked === undefined ? 'menuitem' : 'menuitemradio';
+            const checked = item.checked;
             const content = (
               <>
                 {item.icon ? <Icon name={item.icon} size={17} /> : null}
@@ -86,14 +97,20 @@ export function Menu({
             );
             if (item.href) {
               return (
-                <a key={index} role="menuitem" href={item.href} className={classes} aria-disabled={item.disabled || undefined}
-                  onClick={() => setOpen(false)}>
+                <a key={index} role={role} href={item.href} className={classes} aria-disabled={item.disabled || undefined}
+                  aria-checked={checked}
+                  onClick={() => {
+                    setOpen(false);
+                    // A link still runs its own step first (the language's cookie).
+                    item.onSelect?.();
+                  }}>
                   {content}
                 </a>
               );
             }
             return (
-              <button key={index} type="button" role="menuitem" className={classes} aria-disabled={item.disabled || undefined}
+              <button key={index} type="button" role={role} className={classes} aria-disabled={item.disabled || undefined}
+                aria-checked={checked}
                 onClick={() => {
                   setOpen(false);
                   item.onSelect?.();

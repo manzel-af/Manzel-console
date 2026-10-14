@@ -33,7 +33,7 @@ import { useErrorText } from '@/lib/errors';
 import { useFormat } from '@/lib/format/use-format';
 import { useHref, useT } from '@/lib/i18n/client';
 import type { AdminUser } from '@/lib/supabase/database.types';
-import { dotted } from '@/lib/text';
+import { dotted, isolate } from '@/lib/text';
 
 type Filter = 'all' | 'operators' | 'suspended' | 'noBuilding';
 
@@ -262,7 +262,7 @@ export function PeopleScreen() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-fg">{user.full_name || t('admin.users.noName')}</p>
               <p className="truncate text-sm text-fg-muted">
-                {dotted(lastSeen(user), user.phone, user.building_names ?? t('admin.users.noBuilding'))}
+                {dotted(lastSeen(user), user.phone ? isolate(user.phone) : null, user.building_names ?? t('admin.users.noBuilding'))}
               </p>
             </div>
             {badge(user)}

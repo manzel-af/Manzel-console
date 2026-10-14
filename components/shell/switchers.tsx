@@ -45,6 +45,7 @@ export function LanguageSwitch({ compact = false, className }: { compact?: boole
           </span>
         ),
         href: `${swapLocale(pathname, next)}${query ? `?${query}` : ''}`,
+        checked: next === locale,
         onSelect: () => {
           document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
         },

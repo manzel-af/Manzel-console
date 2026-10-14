@@ -9,6 +9,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 
+import { AlertsPrompt } from '@/components/alerts-prompt';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { Badge, Callout, ProgressBar, Skeleton, StatTile } from '@/components/ui/feedback';
 import { Card, ListRow, PageHeader, RowList, Section } from '@/components/ui/surfaces';
@@ -58,6 +59,7 @@ export function OverviewScreen() {
       />
 
       {stats.error ? <Callout tone="danger" title={errorText(stats.error)} /> : null}
+      <AlertsPrompt />
       {settings.data?.maintenance_enabled ? (
         <Callout tone="warning" icon="wrench" title={t('admin.home.maintenanceOn')} body={t('admin.home.maintenanceOnBody')}
           action={<ButtonLink href={at('/settings')} size="sm" label={t('admin.home.openSettings')} />} />
@@ -118,7 +120,7 @@ export function OverviewScreen() {
           {s && currencies.length > 0 ? (
             <Card bare className="divide-y divide-line">
               {currencies.map((currency) => (
-                <div key={currency} className="grid grid-cols-2 gap-4 p-5">
+                <div key={currency} className="grid grid-cols-1 gap-4 p-5 min-[28rem]:grid-cols-2">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm text-fg-muted">{t('admin.home.outstanding')}</span>
                     <span className={`text-xl font-bold tabular-nums ${(s.outstanding[currency] ?? 0) > 0 ? 'text-danger' : 'text-fg'}`}>

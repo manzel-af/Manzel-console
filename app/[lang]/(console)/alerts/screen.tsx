@@ -25,7 +25,7 @@ import { Card, IconTile, PageHeader, Section } from '@/components/ui/surfaces';
 import { DataTable, useShowMore, type Column } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import {
-  sendTestAlert, subscribeThisBrowser, unsubscribeThisBrowser, useMySubscriptions, useOperatorAlerts, usePushState,
+  sendTestAlert, turnOnAlertsHere, unsubscribeThisBrowser, useMySubscriptions, useOperatorAlerts, usePushState,
 } from '@/lib/api/alerts';
 import { useErrorText } from '@/lib/errors';
 import { useFormat } from '@/lib/format/use-format';
@@ -141,7 +141,7 @@ export function AlertsScreen() {
             <div className="flex flex-wrap gap-2">
               {state.status === 'off' ? (
                 <Button icon="bell" label={t('console.alerts.turnOn')} loading={busy === 'on'}
-                  onClick={() => void run('on', () => subscribeThisBrowser(language), t('console.alerts.turnedOn'))} />
+                  onClick={() => void run('on', () => turnOnAlertsHere(language), t('console.alerts.turnedOn'))} />
               ) : null}
               {state.status === 'on' ? (
                 <Button variant="secondary" icon="minus" label={t('console.alerts.turnOff')} loading={busy === 'off'}

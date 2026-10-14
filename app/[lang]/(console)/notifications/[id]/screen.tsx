@@ -27,16 +27,53 @@ import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Card, PageHeader, Section } from '@/components/ui/surfaces';
 import { DataTable, useShowMore, type Column } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
+import { editableButtons } from '@/components/content/editor';
 import { checkPushReceipts, deletePushCampaign, refreshAdmin, useAnswerCount, usePushCampaign } from '@/lib/api/admin';
 import { useAudienceLabel } from '@/lib/api/audience';
-import { asQuestion, contentButtons, contentText, pick } from '@/lib/content';
+import { clearPicked, keepMessageDraft, setPicked } from '@/lib/api/people';
+import { asQuestion, contentButtons, contentText, pick, textsFromRow } from '@/lib/content';
 import { useErrorText } from '@/lib/errors';
 import { useFormat } from '@/lib/format/use-format';
 import { useHref, useI18n } from '@/lib/i18n/client';
-import type { AdminPushCampaignDetail, PushStatus } from '@/lib/supabase/database.types';
+import type { AdminPushCampaignDetail, PushAudience, PushStatus } from '@/lib/supabase/database.types';
 
 /** Receipts are not ready at once; Expo suggests waiting about this long. */
 const RECEIPTS_AFTER_MS = 2 * 60_000;
+
+/**
+ * "Send again" (2026-10-14): this notification back in the composer — every
+ * language, its buttons, question, picture, screen and importance as sent,
+ * and the same people, to be kept or changed. The words and the people go
+ * where the composer keeps its own (the tab's draft, the picked people); the
+ * rest of the audience goes in the address. Answers the composer's query.
+ */
+function sendAgain(detail: AdminPushCampaignDetail): string {
+  const sent = detail.campaign;
+  keepMessageDraft({
+    texts: textsFromRow(sent),
+    buttons: editableButtons(sent),
+    question: asQuestion(sent.question),
+    imageUrl: sent.image_url,
+    screen: sent.screen,
+    importance: sent.importance,
+  });
+  const audience = (sent.audience ?? { mode: 'all' }) as PushAudience;
+  if (audience.mode === 'selected') {
+    // The detail names its first 300; the audience keeps every one chosen.
+    const names = new Map(detail.recipients.map((person) => [person.profile_id, person.full_name]));
+    setPicked((audience.profileIds ?? []).map((personId) => ({ id: personId, name: names.get(personId) || '—' })));
+  } else {
+    clearPicked();
+  }
+  const rest = {
+    mode: audience.mode,
+    role: audience.role ?? null,
+    buildingId: audience.buildingId ?? null,
+    inactiveHours: audience.inactiveHours ?? null,
+    apps: audience.apps ?? null,
+  };
+  return `again=${encodeURIComponent(sent.id)}&audience=${encodeURIComponent(JSON.stringify(rest))}`;
+}
 
 type Recipient = AdminPushCampaignDetail['recipients'][number];
 
@@ -193,6 +230,8 @@ export function CampaignScreen({ params }: { params: Promise<{ id: string }> }) 
         backLabel={t('admin.push.title')}
         actions={(
           <>
+            <Button variant="primary" icon="copy" label={t('console.push.again')}
+              onClick={() => router.push(href(`/notifications/new?${sendAgain(data)}`))} />
             <Button variant="secondary" icon="sync" label={t('admin.push.checkDelivery')} loading={checking}
               onClick={() => void check(false)} />
             <Button variant="soft-danger" icon="trash" label={t('common.delete')} onClick={() => setConfirmDelete(true)} />

@@ -69,6 +69,33 @@ const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const PREVIEW_PAUSE_MS = 400;
 
 const newClientId = () => crypto.randomUUID();
+
+/** "Send again" (?audience=): who a sent notification went to, but its people (picked apart). */
+interface AudienceSeed {
+  mode: Mode;
+  role: Role | null;
+  buildingId: string | null;
+  inactiveHours: number | null;
+  apps: AppTarget | null;
+}
+
+function audienceFromParam(raw: string | null): AudienceSeed | null {
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw) as Partial<AudienceSeed>;
+    if (!value || !MODES.includes(value.mode as Mode)) return null;
+    return {
+      mode: value.mode as Mode,
+      role: ROLES.includes(value.role as Role) ? value.role as Role : null,
+      buildingId: typeof value.buildingId === 'string' ? value.buildingId : null,
+      inactiveHours: typeof value.inactiveHours === 'number' ? value.inactiveHours : null,
+      // The server checks it again; anything that is not an object is no target.
+      apps: value.apps && typeof value.apps === 'object' ? value.apps : null,
+    };
+  } catch {
+    return null;
+  }
+}
 const digitsOnly = (raw: string) => raw.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0)).replace(/\D/g, '');
 
 export function ComposeScreen() {
@@ -86,9 +113,13 @@ export function ComposeScreen() {
   const picked = usePickedPeople();
   const fileInput = useRef<HTMLInputElement>(null);
 
-  // The message as it was left in this tab, if it was not sent.
+  // The message as it was left in this tab, if it was not sent — or, from
+  // "Send again", a notification already sent, with its audience.
+  const again = params.get('again');
+  const [seed] = useState(() => audienceFromParam(params.get('audience')));
   const [kept] = useState(getMessageDraft);
-  const [showKept, setShowKept] = useState(kept !== null);
+  const [showKept, setShowKept] = useState(kept !== null && !again);
+  const [showAgain, setShowAgain] = useState(Boolean(again));
   const [lang, setLang] = useState<ContentLanguage>(language);
   const [texts, setTexts] = useState<TextDraft>(() => kept?.texts ?? emptyTexts());
   const [buttons, setButtons] = useState<ContentButton[]>(() => kept?.buttons ?? []);
@@ -97,13 +128,17 @@ export function ComposeScreen() {
   const [screen, setScreen] = useState<NotificationScreen | null>(() => kept?.screen ?? null);
   const [importance, setImportance] = useState<PushImportance>(() => kept?.importance ?? 'normal');
 
-  // People chosen on People (or a person's page) arrive already picked.
-  const [mode, setMode] = useState<Mode>(picked.length > 0 ? 'selected' : 'all');
-  const [inactiveHours, setInactiveHours] = useState('24');
-  const [role, setRole] = useState<Role | null>(null);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
+  // People chosen on People (or a person's page) arrive already picked; "Send
+  // again" brings the whole audience it went to.
+  const [mode, setMode] = useState<Mode>(() => {
+    if (seed && (seed.mode !== 'selected' || picked.length > 0)) return seed.mode;
+    return picked.length > 0 ? 'selected' : 'all';
+  });
+  const [inactiveHours, setInactiveHours] = useState(() => String(seed?.inactiveHours ?? 24));
+  const [role, setRole] = useState<Role | null>(() => seed?.role ?? null);
+  const [buildingId, setBuildingId] = useState<string | null>(() => seed?.buildingId ?? null);
   // V037: some apps only — or what the App versions page sent (?apps=).
-  const [apps, setApps] = useState<AppTarget | null>(() => targetFromParam(params.get('apps')));
+  const [apps, setApps] = useState<AppTarget | null>(() => (seed ? seed.apps : targetFromParam(params.get('apps'))));
 
   const [clientId, setClientId] = useState(newClientId);
   const [uploading, setUploading] = useState(false);
@@ -222,6 +257,10 @@ export function ComposeScreen() {
       {showKept ? (
         <Callout className="mb-6" title={t('admin.push.draftRestored')}
           action={<Button variant="ghost" size="sm" label={t('common.close')} onClick={() => setShowKept(false)} />} />
+      ) : null}
+      {showAgain ? (
+        <Callout className="mb-6" icon="copy" title={t('console.push.againTitle')} body={t('console.push.againBody')}
+          action={<Button variant="ghost" size="sm" label={t('common.close')} onClick={() => setShowAgain(false)} />} />
       ) : null}
 
       <form

@@ -347,7 +347,15 @@
         "report": "New problem report",
         "chat_report": "A chat message was reported",
         "test": "Test alert"
-      }
+      },
+      "homeOff": "Alerts are off on this browser",
+      "homeOffBody": "Turn them on to hear of a support message, a building request or a report the moment it arrives, even with the console closed.",
+      "notNow": "Not now"
+    },
+    "push": {
+      "again": "Send again",
+      "againTitle": "A copy of a notification already sent",
+      "againBody": "Everything is filled in as it was sent, for the same people. Change what you need, check who gets it, and send."
     }
   }
 }
