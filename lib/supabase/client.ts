@@ -39,7 +39,10 @@ export function getSupabase(): SupabaseClient<Database> {
       // Sign-in is a code typed on the page; no link brings a session back.
       detectSessionInUrl: false,
     },
-    global: { headers: { 'x-application-name': 'manzel-console' } },
+    // No custom request headers. The edge functions' CORS names every header
+    // a browser may send them (supabase/functions/_shared/http.ts in the app),
+    // and a header missing there fails every function call before it is made
+    // — which an `x-application-name` header here once did.
   });
   return client;
 }
