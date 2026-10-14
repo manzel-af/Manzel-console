@@ -86,12 +86,13 @@ export function PersonScreen({ params }: { params: Promise<{ id: string }> }) {
   const active = u.memberships.filter((membership) => membership.active);
   const past = u.memberships.filter((membership) => !membership.active);
 
-  const run = async (action: () => Promise<unknown>, done: string) => {
+  /** `gone`: the action removed this person, so their page is not asked for again. */
+  const run = async (action: () => Promise<unknown>, done: string, gone?: string) => {
     setBusy(true);
     setError(null);
     try {
       await action();
-      await refreshAdmin(queryClient);
+      await refreshAdmin(queryClient, gone);
       toast.show(done);
       return true;
     } catch (caught) {
@@ -115,7 +116,7 @@ export function PersonScreen({ params }: { params: Promise<{ id: string }> }) {
         await run(() => accountAction(u.profile_id, 'unsuspend'), t('admin.user.unsuspended'));
         break;
       case 'delete':
-        if (await run(() => accountAction(u.profile_id, 'delete'), t('admin.user.deleted'))) router.push(href('/people'));
+        if (await run(() => accountAction(u.profile_id, 'delete'), t('admin.user.deleted'), u.profile_id)) router.push(href('/people'));
         break;
       case 'end':
         await run(() => endMembershipAsOperator(confirm.membership.membership_id), t('admin.building.accessEnded'));

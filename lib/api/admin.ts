@@ -12,7 +12,7 @@
  * own session.
  */
 
-import { keepPreviousData, useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, type Query, type QueryClient } from '@tanstack/react-query';
 
 import {
   buttonsOf, questionOf, translationsOf,
@@ -46,13 +46,19 @@ export const adminKeys = {
   settings: ['platform', 'settings'] as const,
 };
 
-/** After any operator write: every admin list and number, fetched again. */
-export function refreshAdmin(queryClient: QueryClient) {
+/**
+ * After any operator write: every admin list and number, fetched again.
+ * `gone` names a person who no longer exists (just deleted): what is cached
+ * about them stays as it is until their page closes, because asking again
+ * could only fail — and would show "That did not work" for a delete that did.
+ */
+export function refreshAdmin(queryClient: QueryClient, gone?: string) {
+  const predicate = (query: Query) => !gone || !query.queryKey.includes(gone);
   return Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['admin'] }),
-    queryClient.invalidateQueries({ queryKey: ['admin-requests'] }),
-    queryClient.invalidateQueries({ queryKey: ['admin-buildings'] }),
-    queryClient.invalidateQueries({ queryKey: ['platform'] }),
+    queryClient.invalidateQueries({ queryKey: ['admin'], predicate }),
+    queryClient.invalidateQueries({ queryKey: ['admin-requests'], predicate }),
+    queryClient.invalidateQueries({ queryKey: ['admin-buildings'], predicate }),
+    queryClient.invalidateQueries({ queryKey: ['platform'], predicate }),
   ]);
 }
 
